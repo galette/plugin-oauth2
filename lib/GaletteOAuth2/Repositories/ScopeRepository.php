@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace GaletteOAuth2\Repositories;
 
+use Analog\Analog;
 use GaletteOAuth2\Entities\ScopeEntity;
 use League\OAuth2\Server\Entities\ClientEntityInterface;
 use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
@@ -37,21 +38,41 @@ use function array_key_exists;
  */
 final class ScopeRepository implements ScopeRepositoryInterface
 {
-    public function getScopeEntityByIdentifier($scopeIdentifier)
+    public static function knownScopes(): array
     {
-        $scopes = [
-            'basic' => [
-                'description' => 'Basic details about you',
+        return [
+            'member' => [
+                'description' => _T('Access to your member basic information: name, login, email, language, company name)', 'oauth2'),
             ],
-            'email' => [
-                'description' => 'Your email address',
+            'member:personal' => [
+                'description' => _T('Access tp more precise personal data: birth date, job, gender, birth place, GnuPG ID', 'oauth2'),
             ],
-            'teamonly' => [
-                'description' => 'Access to your team',
+            'member:localization' => [
+                'description' => _T('Access to your localization data: zipcode, town, region, country', 'oauth2'),
+            ],
+            'member:localization:precise' => [
+                'description' => _T('Access to your precise localisation data: full address, coordinates (from maps plugin)', 'oauth2'),
+            ],
+            'member:socials' => [
+                'description' => _T('Access to your social networks data', 'oauth2'),
+            ],
+            'member:groups' => [
+                'description' => _T('Access to the groups you belong to', 'oauth2'),
+            ],
+            'member:due_date' => [
+                'description' => _T('Access to your due date', 'oauth2'),
             ]
         ];
+    }
 
+    public function getScopeEntityByIdentifier($scopeIdentifier)
+    {
+        $scopes = static::knownScopes();
         if (array_key_exists($scopeIdentifier, $scopes) === false) {
+            Analog::log(
+                'Unknown scope identifier: ' . $scopeIdentifier,
+                Analog::ERROR
+            );
             return null;
         }
 

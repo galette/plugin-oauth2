@@ -55,8 +55,43 @@ The corresponding NextCloud configuration:
 
 
 ### Available options :
-* teamonly : only staff members can login
-* uptodate : only uptodate members can login
+
+* admin: only staff members can login
+* staff: only staff members can login
+* uptodate: only uptodate members can login
+* groupmanager: groups managers can login
+
+### Scopes
+
+* `member`: default, basic scope:
+  * user full name,
+  * login,
+  * email,
+  * language
+  * company name if relevant
+* `member:personal` precise personal data:
+  * birth date,
+  * job,
+  * gender,
+  * birth place
+  * GPG id
+* `member:localization` localization data:
+  * country,
+  * region,
+  * town
+  * zipcode
+* `member:localization:fine` precise localization data:
+  * full address,
+  * coordinates (if used with maps plugin)
+* `member:phones`:
+  * mobile phone
+  * phone
+* `member:socials`:
+  * all registered social networks
+* `member:groups`:
+  * groups member is part of
+* `member:due_date`:
+  * due_datee date
 
 # Usage
 

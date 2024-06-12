@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace GaletteOAuth2\Controllers;
 
+use Analog\Analog;
 use DI\Attribute\Inject;
 use DI\Container;
 use Galette\Controllers\AbstractPluginController;
@@ -66,29 +67,27 @@ final class ApiController extends AbstractPluginController
         $rep = $server->validateAuthenticatedRequest($request);
 
         $oauth_user_id = (int) $rep->getAttribute('oauth_user_id'); //SESSION is empty, use decrypted data
-        $options = UserHelper::mergeOptions($this->config, $rep->getAttribute('oauth_client_id'), $rep->getAttribute('oauth_scopes'));
-
-        Debug::log("api/user() load user #{$oauth_user_id} - " . Debug::printVar($options));
+        Debug::log("api/user() load user #{$oauth_user_id}");
 
         try {
-            $data = UserHelper::getUserData($this->container, $oauth_user_id, $options);
+            $data = UserHelper::getUserData(
+                $this->container,
+                $oauth_user_id,
+                UserHelper::getOptions($this->config, $oauth_user_id),
+                UserHelper::mergeScopes(
+                    $this->config,
+                    $oauth_user_id,
+                    $rep->getAttribute('oauth_scopes')
+                )
+            );
         } catch (UserAuthorizationException $e) {
-            throw $e;
-            //UserHelper::logout($this->container);
-            /*Analog::log(
+            UserHelper::logout($this->container);
+            Analog::log(
                 'api/user() error : ' . $e->getMessage(),
                 Analog::ERROR
             );
-            $this->flash->addMessage(
-                'error_detected',
-                _T('Check your login / email or password.', 'oauth2')
-            );
-            return $response
-                ->withStatus(301)
-                ->withHeader(
-                    'Location',
-                    $this->routeparser->urlFor(OAUTH2_PREFIX . '_login')
-                );*/
+            $response->getBody()->write(json_encode(['message' => $e->getMessage()]));
+            return $response->withStatus(401);
         }
 
         Debug::log('api/user() return data = ' . Debug::printVar($data));

@@ -1,0 +1,44 @@
+{% extends "public_page.html.twig" %}
+
+{% set ext_auth = true %}
+{% block content %}
+    <form action="{{ url_for('oauth2_doAuthorize') }}?{{ querystring }}" method="post" class="ui form">
+        <div class="ui segments">
+            <div class="ui segment">
+                <div class="header">
+                    <h3>{{  _T('Application "%s" requests access to following scopes:')|replace({'%s': clientName}) }}</h3>
+                </div>
+                <div class="ui link cards">
+    {% for requested_scope in requested_scopes %}
+                    <div class="card">
+                        <div class="content">
+                            <i class="right floated ui check green icon"></i>
+                            <div class="header">
+                                {{ requested_scope }}
+                            </div>
+                            <div class="description">
+                                {{ known_scopes[requested_scope]['description'] }}
+                            </div>
+                        </div>
+                    </div>
+    {% endfor %}
+                </div>
+
+                {% include "components/forms/csrf.html.twig" %}
+            </div>
+            <div class="ui center aligned secondary segment">
+                <div class="ui two buttons">
+                    <button type="submit" name="approve" class="ui fluid primary submit button">
+                        <i class="ui icon check double green"></i>
+                        {{ _T("Approve", "oauth2") }}
+                    </button>
+                    <button type="submit" name="decline" class="ui fluid secondary submit button" value="">
+                        <i class="ui icon ban red"></i>
+                        {{ _T("Decline", "oauth2") }}
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </form>
+{% endblock %}

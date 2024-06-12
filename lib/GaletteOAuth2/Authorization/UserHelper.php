@@ -27,6 +27,7 @@ use DI\Container;
 use Galette\Core\Db;
 use Galette\Core\Login;
 use Galette\Entity\Adherent;
+use Galette\Entity\Social;
 use GaletteOAuth2\Tools\Config;
 use GaletteOAuth2\Tools\Debug;
 
@@ -97,14 +98,44 @@ final class UserHelper
         $history->add(_T('Logout'));
     }
 
-    public static function getUserData(Container $container, int $id, array $options)
+    /**
+     * Get user data
+     *
+     * @param Container $container Container
+     * @param int       $id        User ID
+     * @param array     $options   Access options
+     * @param array     $scopes    Scopes
+     * @return array
+     * @throws UserAuthorizationException
+     * @throws \DI\DependencyException
+     * @throws \DI\NotFoundException
+     * @throws \Throwable
+     */
+    public static function getUserData(Container $container, int $id, array $options, array|string $scopes): array
     {
         /** @var Db $zdb */
         $zdb = $container->get('zdb');
 
+        if ($id === 0) {
+            throw new UserAuthorizationException(_T('User not found.', 'oauth2'));
+        }
+
         $member = new Adherent($zdb);
         $member->load($id);
 
+        $default_scope = array_search('member', $scopes, true);
+        if ($default_scope !== false) {
+            unset($scopes[$default_scope]);
+        } else {
+            throw new UserAuthorizationException(
+                sprintf(
+                    _T('Default scope (%s) has not been authorized.', 'oauth2'),
+                    'member'
+                )
+            );
+        }
+
+        //FIXME: I really doubt reworking names is a good idea outside a specific usage
         $nameExplode = preg_split('/[\\s,-]+/', $member->name);
         //$surnameExplode = preg_split('/[\\s,-]+/', $member->surname);
 
@@ -120,10 +151,11 @@ final class UserHelper
 
         //Normalized format s.name (example mail usage : s.name@xxxx.xx )
         //FIXME: why don't use email directly?
-        $norm_login =
-        mb_substr(self::stripAccents($member->surname), 0, 1) .
-        '.' .
-        self::stripAccents($nameFPart);
+        $norm_login = sprintf(
+            '%s.%s',
+            mb_substr(self::stripAccents($member->surname), 0, 1),
+            self::stripAccents($nameFPart)
+        );
 
         //check active member ?
         if (!$member->isActive()) {
@@ -135,7 +167,6 @@ final class UserHelper
             throw new UserAuthorizationException(_T("Sorry, you can't login. Please, add an email address to your account.", 'oauth2'));
         }
 
-        //for options=
         //teamonly
         if (in_array('teamonly', $options, true)) {
             if (!$member->isAdmin() && !$member->isStaff() && !$member->isGroupManager(null)) {
@@ -153,7 +184,90 @@ final class UserHelper
             }
         }
 
-        //Groups list for Nextcloud
+        $oauth_data = [
+            'id' => $member->id,
+            'identifier' => $member->id, //nextcloud
+            'displayName' => $member->sname,
+            'username' => $norm_login, //FIXME: $member->login,
+            'userName' => $norm_login, //FIXME: $member->login,
+            'name' => $norm_login, //FIXME: $member->sname,
+            'email' => $member->email,
+            'mail' => $member->email,
+            'language' => $member->language,
+            'status' => $member->status
+        ];
+
+        //member:personal
+        if (in_array('member:personal', $scopes)) {
+            $oauth_data['birthDate'] = $member->birthdate;
+            $oauth_data['birthPlace'] = $member->birth_place;
+            $oauth_data['job'] = $member->job;
+            $oauth_data['gender'] = $member->gender;
+            $oauth_data['gpgid'] = $member->gnupgid;
+        }
+
+        //member:localization
+        if (in_array('member:localization', $scopes)) {
+            $oauth_data['country'] = $member->country;
+            $oauth_data['zip'] = $member->zipcode;
+            $oauth_data['city'] = $member->town;
+            $oauth_data['region'] = $member->region;
+        }
+
+        //member:localization:fine
+        if (in_array('member:localization:fine', $scopes)) {
+            $oauth_data['address'] = $member->address;
+            //TODO
+            /*$oauth_data['latitude'] = $member->latitude;
+            $oauth_data['longitude'] = $member->longitude;*/
+        }
+
+        //member:phones
+        if (in_array('member:phones', $scopes)) {
+            $phone = '';
+            if ($member->phone) {
+                $phone = $member->phone;
+            }
+            if ($member->gsm) {
+                if ($phone) {
+                    $phone .= ' - ';
+                }
+                $phone .= $member->gsm;
+            }
+            $oauth_data['phone'] = $phone;
+        }
+
+        //member:socials
+        if (in_array('member:socials', $scopes)) {
+            $socials = Social::getListForMember($member->id);
+            foreach ($socials as $social) {
+                $oauth_data['socials'][$social->type] = $social->url;
+            }
+        }
+
+        //member:groups
+        if (in_array('member:groups', $scopes)) {
+            //nextcloud : set fields Groups claim (optional) = groups
+            $oauth_data['groups'] = self::getUserGroups($member);
+        }
+
+        //member:due_date
+        if (in_array('member:due_date', $scopes)) {
+            $oauth_data['due_date'] = $member->due_date;
+        }
+
+        return $oauth_data;
+    }
+
+    /**
+     * Comma separated groups names
+     *
+     * @param Adherent $member Member
+     *
+     * @return string
+     */
+    protected static function getUserGroups(Adherent $member): string
+    {
         $groups = [$member->sstatus]; //first group is the member status
 
         if ($member->isAdmin()) {
@@ -191,42 +305,13 @@ final class UserHelper
         }
         $groups = implode(',', $groups);
 
-        /*$phone = '';
-        if ($member->phone) {
-            $phone = $member->phone;
-        }
-        if ($member->gsm) {
-            if ($phone) {
-                $phone .= '/';
-            }
-            $phone .= $member->gsm;
-        }*/
-
-        return [
-            'id' => $member->id,
-            'identifier' => $member->id, //nextcloud
-            'displayName' => $member->sname,
-            'username' => $norm_login, //FIXME: $member->login,
-            'userName' => $norm_login, //FIXME: $member->login,
-            'name' => $norm_login, //FIXME: $member->sname,
-            'email' => $member->email,
-            'mail' => $member->email,
-            'language' => $member->language,
-
-            /*'country' => $member->country,
-            'zip' => $member->zipcode,
-            'city' => $member->town,
-            'phone' => $phone,*/
-
-            'status' => $member->status,
-            'groups' => $groups, //nextcloud : set fields Groups claim (optional) = groups
-        ];
+        return $groups;
     }
 
     //merge oauth_scopes with user config.yml client_id.options
-    public static function mergeOptions(Config $config, $client_id, array $oauth_scopes)
+    public static function getOptions(Config $config, $client_id)
     {
-        $options = $oauth_scopes;
+        $options = [];
         $o = $config->get("{$client_id}.options");
 
         if ($o) {
@@ -238,6 +323,30 @@ final class UserHelper
         Debug::log('Options: ' . implode(';', $options));
 
         return $options;
+    }
+
+    public static function mergeScopes(Config $config, $client_id, array|string $requested_scopes): array
+    {
+        $scopes = [];
+        if (!is_array($requested_scopes)) {
+            $requested_scopes = str_replace([';', ','], ' ', $requested_scopes);
+            $requested_scopes = explode(' ', $requested_scopes);
+        }
+        $scopes = array_merge($scopes, $requested_scopes);
+
+        $conf_scopes = $config->get("{$client_id}.scopes");
+        if ($conf_scopes) {
+            if (!is_array($conf_scopes)) {
+                $conf_scopes = str_replace([';', ','], ' ', $conf_scopes);
+                $conf_scopes = explode(' ', $conf_scopes);
+            }
+            $scopes = array_merge($scopes, $conf_scopes);
+        }
+        $scopes = array_unique($scopes);
+        $scopes = array_map('strtolower', $scopes);
+        Debug::log('Scopes: ' . implode(';', $scopes));
+
+        return $scopes;
     }
 
     // Nextcloud data:

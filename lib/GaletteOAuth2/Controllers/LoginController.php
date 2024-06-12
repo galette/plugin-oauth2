@@ -112,15 +112,24 @@ final class LoginController extends AbstractPluginController
                 );
         }
 
-        //check rights with scopes
-        $options = UserHelper::mergeOptions(
-            $this->config,
-            $this->session->request_args['client_id'],
-            explode(' ', $this->session->request_args['scope'])
-        );
-
         try {
-            UserHelper::getUserData($this->container, $uid, $options);
+            $scopes = $this->session->request_args['scope'] ?? [];
+            if (!is_array($scopes)) {
+                $scopes = str_replace([';', ','], ' ', $scopes);
+                $scopes = explode(' ', $scopes);
+            }
+
+            $client_id = $this->session->request_args['client_id'];
+            UserHelper::getUserData(
+                $this->container,
+                $uid,
+                UserHelper::getOptions($this->config, $client_id),
+                UserHelper::mergeScopes(
+                    $this->config,
+                    $client_id,
+                    $this->session->request_args['scope'] ?? []
+                )
+            );
         } catch (UserAuthorizationException $e) {
             UserHelper::logout($this->container);
             Debug::log('login() check rights error ' . $e->getMessage());
