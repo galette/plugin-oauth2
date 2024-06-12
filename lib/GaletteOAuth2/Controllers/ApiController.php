@@ -72,17 +72,18 @@ final class ApiController extends AbstractPluginController
         $server = $this->container->get(ResourceServer::class);
         $rep = $server->validateAuthenticatedRequest($request);
 
-        $oauth_user_id = (int) $rep->getAttribute('oauth_user_id'); //SESSION is empty, use decrypted data
+        $oauth_user_id = (int)$rep->getAttribute('oauth_user_id'); //SESSION is empty, use decrypted data
+        $client_id = $rep->getAttribute('oauth_client_id');
         Debug::log("api/user() load user #{$oauth_user_id}");
 
         try {
             $data = UserHelper::getUserData(
                 $this->container,
                 $oauth_user_id,
-                UserHelper::getOptions($this->config, $oauth_user_id),
+                UserHelper::getOptions($this->config, $client_id),
                 UserHelper::mergeScopes(
                     $this->config,
-                    $oauth_user_id,
+                    $client_id,
                     $rep->getAttribute('oauth_scopes')
                 )
             );
