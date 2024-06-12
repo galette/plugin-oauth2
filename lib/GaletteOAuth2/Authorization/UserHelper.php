@@ -279,7 +279,7 @@ final class UserHelper
             $groups[] = 'staff';
         }
 
-        if ($member->isGroupManager(null)) {
+        if (count($member->getManagedGroups()) > 0) {
             $groups[] = 'groupmanager';
         }
 
