@@ -267,7 +267,7 @@ final class UserHelper
      *
      * @return string
      */
-    protected static function getUserGroups(Adherent $member): string
+    protected static function getUserGroups(Adherent $member): array
     {
         $groups = [$member->sstatus]; //first group is the member status
 
@@ -298,6 +298,7 @@ final class UserHelper
             $groups = array_merge($groups, explode(';', $g));
         }
 
+        //TODO: maybe a bit excessive for a global usage?
         //Reformat group with strtolower, remove whites & slashs
         foreach ($groups as &$group) {
             $group = trim($group);
@@ -305,7 +306,6 @@ final class UserHelper
             $group = str_replace('__', '_', $group);
             $group = self::stripAccents($group);
         }
-        $groups = implode(',', $groups);
 
         return $groups;
     }
