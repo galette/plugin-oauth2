@@ -6,7 +6,7 @@
         <div class="ui segments">
             <div class="ui segment">
                 <div class="header">
-                    <h3>{{  _T('Application "%s" requests access to following scopes:')|replace({'%s': clientName}) }}</h3>
+                    <h3>{{ _T('Application "%s" requests access to following scopes:')|replace({'%s': clientName}) }}</h3>
                 </div>
                 <div class="ui link cards">
     {% for requested_scope in requested_scopes %}
