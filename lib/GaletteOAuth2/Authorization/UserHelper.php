@@ -188,54 +188,70 @@ final class UserHelper
             'id' => $member->id,
             'sub' => $member->id, //drupal / OpenID-Connect
             'identifier' => $member->id, //nextcloud
+            'name' => $member->sfullname, //OpenID-Connect
             'displayName' => $member->sname,
             'username' => $norm_login, //FIXME: $member->login,
             'userName' => $norm_login, //FIXME: $member->login,
-            'name' => $norm_login, //FIXME: $member->sname,
             'email' => $member->email,
             'mail' => $member->email,
+            'locale' => $member->language, //OpenID-Connect
             'language' => $member->language,
             'status' => $member->status
         ];
 
         //member:personal
         if (in_array('member:personal', $scopes)) {
-            $oauth_data['birthDate'] = $member->birthdate;
-            $oauth_data['birthPlace'] = $member->birth_place;
+            $oauth_data['birthdate'] = $member->birthdate;
+            $oauth_data['birthplace'] = $member->birth_place;
             $oauth_data['job'] = $member->job;
-            $oauth_data['gender'] = $member->gender;
+            $oauth_data['gender'] = $member->sgender;
             $oauth_data['gpgid'] = $member->gnupgid;
         }
 
         //member:localization
-        if (in_array('member:localization', $scopes)) {
-            $oauth_data['country'] = $member->country;
-            $oauth_data['zip'] = $member->zipcode;
-            $oauth_data['city'] = $member->town;
-            $oauth_data['region'] = $member->region;
-        }
+        if (in_array('member:localization', $scopes) || in_array('member:localization:fine', $scopes)) {
+            $address = new \stdClass();
 
-        //member:localization:fine
-        if (in_array('member:localization:fine', $scopes)) {
-            $oauth_data['address'] = $member->address;
-            //TODO
-            /*$oauth_data['latitude'] = $member->latitude;
-            $oauth_data['longitude'] = $member->longitude;*/
+            if (in_array('member:localization:fine', $scopes)) {
+                $formatted = $member->getAddress();
+                if ($member->getZipcode() || $member->getTown()) {
+                    $formatted .= "\r\n\r\n";
+                    if ($member->getZipcode()) {
+                        $formatted .= $member->getZipcode() . ' ';
+                    }
+                    if ($member->getTown()) {
+                        $formatted .= $member->getTown();
+                    }
+                }
+                if ($member->getRegion()) {
+                    $formatted .= "\r\n" . $member->getRegion();
+                }
+                if ($member->getCountry()) {
+                    $formatted .= "\r\n" . $member->getCountry();
+                }
+
+                $address->formatted = $formatted;
+                $address->street_address = $member->getAddress();
+            }
+            $address->locality = $member->getTown();
+            $address->region = $member->getRegion();
+            $address->postal_code = $member->getZipcode();
+            $address->country = $member->getCountry();
+            $oauth_data['address'] = $address;
         }
 
         //member:phones
         if (in_array('member:phones', $scopes)) {
-            $phone = '';
             if ($member->phone) {
-                $phone = $member->phone;
+                $oauth_data['phone'] = $member->phone;
             }
             if ($member->gsm) {
-                if ($phone) {
-                    $phone .= ' - ';
+                if ($member->phone) {
+                    $oauth_data['mobile_phone'] = $member->gsm;
+                } else {
+                    $oauth_data['phone'] = $member->gsm;
                 }
-                $phone .= $member->gsm;
             }
-            $oauth_data['phone'] = $phone;
         }
 
         //member:socials

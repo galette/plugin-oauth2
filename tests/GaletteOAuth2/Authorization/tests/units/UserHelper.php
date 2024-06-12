@@ -103,12 +103,13 @@ class UserHelper extends GaletteTestCase
             'id' => $adh1->id,
             'sub' => $adh1->id,
             'identifier' => $adh1->id,
+            'name' => $adh1->sfullname,
             'displayName' => $adh1->sname,
             'username' => 'r.durand',
             'userName' => 'r.durand',
-            'name' => 'r.durand',
             'email' => $adh1->email,
             'mail' => $adh1->email,
+            'locale' => $adh1->language,
             'language' => $adh1->language,
             'status' => $adh1->status,
         ];
@@ -128,10 +129,10 @@ class UserHelper extends GaletteTestCase
 
         $this->assertSame(
             $expected_base + [
-                'birthDate' => '1941-12-26',
-                'birthPlace' => 'Gonzalez-sur-Meunier',
+                'birthdate' => '1941-12-26',
+                'birthplace' => 'Gonzalez-sur-Meunier',
                 'job' => 'Chef de fabrication',
-                'gender' => 0,
+                'gender' => 'Unspecified',
                 'gpgid' => ''
             ],
             $user_data
@@ -206,17 +207,19 @@ class UserHelper extends GaletteTestCase
             ['member', 'member:localization']
         );
 
-        $this->assertSame(
+        $address = new \stdClass();
+        $address->locality = 'Martel';
+        $address->region = '';
+        $address->postal_code = '39 069';
+        $address->country = 'Antarctique';
+        $this->assertEquals(
             $expected_base + [
-                'country' => 'Antarctique',
-                'zip' => '39 069',
-                'city' => 'Martel',
-                'region' => ''
+                'address' => $address
             ],
             $user_data
         );
 
-        //test fine localization scope
+        //test precise localization scope
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
@@ -224,9 +227,11 @@ class UserHelper extends GaletteTestCase
             ['member', 'member:localization:fine']
         );
 
-        $this->assertSame(
+        $address->formatted = "66, boulevard De Oliveira\r\n\r\n39 069 Martel\r\nAntarctique";
+        $address->street_address = "66, boulevard De Oliveira";
+        $this->assertEquals(
             $expected_base + [
-                'address' => '66, boulevard De Oliveira',
+                'address' => $address
             ],
             $user_data
         );

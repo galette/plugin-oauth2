@@ -82,11 +82,11 @@ When ther eis no option set in configuration, it defaults to "active" + "uptodat
 * `member:localization` localization data:
   * country,
   * region,
-  * town
+  * town,
   * zipcode
 * `member:localization:fine` precise localization data:
-  * full address,
-  * coordinates (if used with maps plugin)
+  * address,
+  * maps plugin coordinates
 * `member:phones`:
   * mobile phone
   * phone
