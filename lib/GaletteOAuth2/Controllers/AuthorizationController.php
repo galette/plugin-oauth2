@@ -55,7 +55,13 @@ final class AuthorizationController extends AbstractPluginController
     protected Container $container;
     protected Config $config;
 
-    // constructor receives container instance
+    /**
+     * Default constructor
+     *
+     * @param Container $container Container instance
+     * @throws \DI\DependencyException
+     * @throws \DI\NotFoundException
+     */
     public function __construct(Container $container)
     {
         $this->container = $container;
@@ -117,6 +123,7 @@ final class AuthorizationController extends AbstractPluginController
             $authRequest = $server->validateAuthorizationRequest($request);
 
             $user = new UserEntity();
+            //FIXME: for both isLoggedIn and user_id, we can rely on login object stored in session
             $user->setIdentifier($this->session->user_id);
             $authRequest->setUser($user);
 
@@ -130,15 +137,6 @@ final class AuthorizationController extends AbstractPluginController
                     )
                 )
             );
-            //$queryParams = $request->getQueryParams();
-            /*$scopes = ['member']; //default basic scope is always present
-
-            $queryScopes = $queryParams['scope'] ?? [];
-            if (!is_array($queryScopes)) {
-                $queryScopes = explode(' ', $queryScopes);
-            }
-            $queryScopes = array_map('strtolower', $queryScopes);
-            $scopes = array_unique(array_merge($scopes, $queryScopes));*/
 
             $this->view->render(
                 $response,
@@ -186,6 +184,7 @@ final class AuthorizationController extends AbstractPluginController
             // The auth request object can be serialized into a user's session
             $authRequest = $server->validateAuthorizationRequest($request);
             $user = new UserEntity();
+            //FIXME: for both isLoggedIn and user_id, we can rely on login object stored in session
             $user->setIdentifier($this->session->user_id);
             $authRequest->setUser($user);
 

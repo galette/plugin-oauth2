@@ -51,7 +51,13 @@ final class ApiController extends AbstractPluginController
     protected Container $container;
     protected Config $config;
 
-    // constructor receives container instance
+    /**
+     * Default constructor
+     *
+     * @param Container $container COntainer instance
+     * @throws \DI\DependencyException
+     * @throws \DI\NotFoundException
+     */
     public function __construct(Container $container)
     {
         $this->container = $container;

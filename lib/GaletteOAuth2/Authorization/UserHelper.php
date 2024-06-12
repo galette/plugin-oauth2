@@ -101,10 +101,10 @@ final class UserHelper
     /**
      * Get user data
      *
-     * @param Container $container Container
-     * @param int       $id        User ID
-     * @param array     $options   Access options
-     * @param array     $scopes    Scopes
+     * @param Container    $container Container instance
+     * @param int          $id        User ID
+     * @param array        $options   Access options
+     * @param array|string $scopes    Scopes
      * @return array
      * @throws UserAuthorizationException
      * @throws \DI\DependencyException
@@ -137,8 +137,6 @@ final class UserHelper
 
         //FIXME: I really doubt reworking names is a good idea outside a specific usage
         $nameExplode = preg_split('/[\\s,-]+/', $member->name);
-        //$surnameExplode = preg_split('/[\\s,-]+/', $member->surname);
-
         if (count($nameExplode) > 0) {
             $nameFPart = $nameExplode[0];
             //too short?
@@ -157,6 +155,7 @@ final class UserHelper
             self::stripAccents($nameFPart)
         );
 
+        //TODO: rework options as documented in README.md
         //check active member ?
         if (!$member->isActive()) {
             throw new UserAuthorizationException(_T('You are not an active member.', 'oauth2'));
@@ -311,8 +310,16 @@ final class UserHelper
         return $groups;
     }
 
-    //merge oauth_scopes with user config.yml client_id.options
-    public static function getOptions(Config $config, $client_id)
+    /**
+     * Get configured options
+     *
+     * @param Config $config Config instance
+     *
+     * @param string $client_id
+     *
+     * @return array
+     */
+    public static function getOptions(Config $config, string $client_id): array
     {
         $options = [];
         $o = $config->get("{$client_id}.options");
@@ -328,7 +335,17 @@ final class UserHelper
         return $options;
     }
 
-    public static function mergeScopes(Config $config, $client_id, array|string $requested_scopes): array
+    /**
+     * Merge requested and configured scopes
+     *
+     * @param Config $config Config instance
+     *
+     * @param string       $client_id        Client app identifier
+     * @param array|string $requested_scopes Requested scopes from query string
+     *
+     * @return array
+     */
+    public static function mergeScopes(Config $config, string $client_id, array|string $requested_scopes): array
     {
         $scopes = [];
         if (!is_array($requested_scopes)) {

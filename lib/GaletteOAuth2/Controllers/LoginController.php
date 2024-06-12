@@ -49,7 +49,13 @@ final class LoginController extends AbstractPluginController
     protected Container $container;
     protected Config $config;
 
-    // constructor receives container instance
+    /**
+     * Default constructor
+     *
+     * @param Container $container Container instance
+     * @throws \DI\DependencyException
+     * @throws \DI\NotFoundException
+     */
     public function __construct(Container $container)
     {
         $this->container = $container;
@@ -94,6 +100,7 @@ final class LoginController extends AbstractPluginController
         $params = (array) $request->getParsedBody();
 
         //Try login
+        //FIXME: for both isLoggedIn and user_id, we can rely on login object stored in session
         $this->session->isLoggedIn = 'no';
         $this->session->user_id = $uid = UserHelper::login($this->container, $params['login'], $params['password']);
         //if($params['login'] == 'manuel') $loginSuccessful = true;
@@ -146,6 +153,7 @@ final class LoginController extends AbstractPluginController
                 );
         }
 
+        //FIXME: for both isLoggedIn and user_id, we can rely on login object stored in session
         $this->session->isLoggedIn = 'yes';
 
         // User is logged in, redirect them to authorize
@@ -170,6 +178,7 @@ final class LoginController extends AbstractPluginController
         Debug::logRequest('logout()', $request);
         UserHelper::logout($this->container);
 
+        //FIXME: for both isLoggedIn and user_id, we can rely on login object stored in session
         $this->session->user_id = null;
         $this->session->isLoggedIn = 'no';
         $client_id = $this->session->request_args['client_id'];
@@ -177,7 +186,6 @@ final class LoginController extends AbstractPluginController
 
         //By default : client_id.redirect_logout else '/'
         $redirect_logout = '/';
-
         if ($client_id) {
             $redirect_logout = $this->config->get("{$client_id}.redirect_logout", $redirect_logout);
         }

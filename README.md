@@ -56,14 +56,18 @@ The corresponding NextCloud configuration:
 
 ### Available options :
 
-* admin: only staff members can login
+* admin: only admin members can login
 * staff: only staff members can login
-* uptodate: only uptodate members can login
+* active: only active accounts can login
+* uptodate: only up-to-date members can login
 * groupmanager: groups managers can login
+* teamonly: only team members (alias for "admin" + "staff" + "groupmanager")
+
+When ther eis no option set in configuration, it defaults to "active" + "uptodate".
 
 ### Scopes
 
-* `member`: default, basic scope:
+* `member`: default, basic scope - always included:
   * user full name,
   * login,
   * email,

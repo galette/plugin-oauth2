@@ -92,6 +92,7 @@ final class ScopeRepository implements ScopeRepositoryInterface
         $userIdentifier = null
     ) {
         /*TODO : ?
+         [JC] 2024-06-12: does not seems required; or maybe I misunderstood something. Anyway; that works without it.
                 // Example of programmatically modifying the final scope of the access token
                 if ((int) $userIdentifier === 1) {
                     $scope = new ScopeEntity();
