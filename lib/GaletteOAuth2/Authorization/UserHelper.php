@@ -241,6 +241,7 @@ final class UserHelper
         if (in_array('member:socials', $scopes)) {
             $socials = Social::getListForMember($member->id);
             foreach ($socials as $social) {
+                /** @phpstan-ignore-next-line (fixed in Galette 1.1.1) */
                 $oauth_data['socials'][$social->type] = $social->url;
             }
         }

@@ -80,12 +80,12 @@ final class AuthorizationController extends AbstractPluginController
 
         try {
             $queryParams = $request->getQueryParams();
+            $client_id = $queryParams['client_id'];
 
             //Save redirect_uri (it's not possible with Sessions)
             //FIXME [JC]: I really do not like the idea of using a file on disk;
             // this may also cause severe issues in case of concurrent logins
             if (isset($queryParams['redirect_uri'])) {
-                $client_id = $queryParams['client_id'];
                 $key = $client_id . '.redirect_uri';
                 if (!isset($this->session->$client_id)) {
                     $this->session->$client_id = new \stdClass();
