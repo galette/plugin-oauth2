@@ -248,6 +248,7 @@ final class UserHelper
         //member:groups
         if (in_array('member:groups', $scopes)) {
             //nextcloud : set fields Groups claim (optional) = groups
+            //FIXME: I don't know how nextcloud manages groups, but there are not groups...
             $oauth_data['groups'] = self::getUserGroups($member);
         }
 
@@ -288,6 +289,7 @@ final class UserHelper
 
         //FIXME: add groups from groups table? Or another way? info_adh does not seems a good way for everyone
         //FIXME: For example, data is replaced on duplication, thus oauth groups configuration would be lost
+        //FIXME: maybe should we just rely on real Galette groups.
         //Add externals groups (free text in info_adh)
         //Example #GROUPS:compta;accueil#
         if (preg_match('/#GROUPS:([^#]*([^#]*))#/mui', $member->others_infos_admin, $matches, PREG_OFFSET_CAPTURE)) {
