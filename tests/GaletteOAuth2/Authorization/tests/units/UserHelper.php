@@ -33,6 +33,28 @@ class UserHelper extends GaletteTestCase
     protected int $seed = 20230324120838;
 
     /**
+     * Tear down tests
+     *
+     * @return void
+     */
+    public function tearDown(): void
+    {
+        parent::tearDown();
+
+        //delete social networks
+        $delete = $this->zdb->delete(\Galette\Entity\Social::TABLE);
+        $this->zdb->execute($delete);
+
+        //drop dynamic translations
+        $delete = $this->zdb->delete(\Galette\Core\L10n::TABLE);
+        $this->zdb->execute($delete);
+
+        $delete = $this->zdb->delete(\Galette\Entity\Adherent::TABLE);
+        $delete->where(['fingerprint' => 'FAKER' . $this->seed]);
+        $this->zdb->execute($delete);
+    }
+
+    /**
      * Test stripAccents
      *
      * @return void
@@ -57,31 +79,173 @@ class UserHelper extends GaletteTestCase
 
         $this->initStatus();
         $adh1  = $this->getMemberOne();
+
+        //test for default scope
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            []
+            [],
+            ['member']
+        );
+
+        $expected_base = [
+            'id' => $adh1->id,
+            'identifier' => $adh1->id,
+            'displayName' => $adh1->sname,
+            'username' => 'r.durand',
+            'userName' => 'r.durand',
+            'name' => 'r.durand',
+            'email' => $adh1->email,
+            'mail' => $adh1->email,
+            'language' => $adh1->language,
+            'status' => $adh1->status,
+        ];
+
+        $this->assertSame(
+            $expected_base,
+            $user_data
+        );
+
+        //test personal scope
+        $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            [],
+            ['member', 'member:personal']
         );
 
         $this->assertSame(
-            [
-                'id' => $adh1->id,
-                'identifier' => $adh1->id,
-                'displayName' => $adh1->sname,
-                'username' => 'r.durand',
-                'userName' => 'r.durand',
-                'name' => 'r.durand',
-                'email' => $adh1->email,
-                'mail' => $adh1->email,
-                'language' => $adh1->language,
-                /*'country' => $adh1->country,
-                'zip' => $adh1->zipcode,
-                'city' => $adh1->town,
-                'phone' => $adh1->phone,*/
-                'status' => $adh1->status,
-                'groups' => 'non-member'
+            $expected_base + [
+                'birthDate' => '1941-12-26',
+                'birthPlace' => 'Gonzalez-sur-Meunier',
+                'job' => 'Chef de fabrication',
+                'gender' => 0,
+                'gpgid' => ''
             ],
             $user_data
         );
+
+        //test phones scope
+        $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            [],
+            ['member', 'member:phones']
+        );
+
+        $this->assertSame(
+            $expected_base + ['phone' => '0439153432'],
+            $user_data
+        );
+
+        //test groups scope
+        $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            [],
+            ['member', 'member:groups']
+        );
+
+        $this->assertSame(
+            $expected_base + ['groups' => 'non-member'],
+            $user_data
+        );
+
+        //test due date scope
+        $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            [],
+            ['member', 'member:due_date']
+        );
+
+        $this->assertSame(
+            $expected_base + ['due_date' => null],
+            $user_data
+        );
+
+        //test localization scope
+        $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            [],
+            ['member', 'member:localization']
+        );
+
+        $this->assertSame(
+            $expected_base + [
+                'country' => 'Antarctique',
+                'zip' => '39 069',
+                'city' => 'Martel',
+                'region' => ''
+            ],
+            $user_data
+        );
+
+        //test fine localization scope
+        $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            [],
+            ['member', 'member:localization:fine']
+        );
+
+        $this->assertSame(
+            $expected_base + [
+                'address' => '66, boulevard De Oliveira',
+            ],
+            $user_data
+        );
+
+        //test socials scope - no socials
+        $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            [],
+            ['member', 'member:socials']
+        );
+
+        $this->assertSame(
+            $expected_base,
+            $user_data
+        );
+
+        //add socials
+        $social = new \Galette\Entity\Social($this->zdb);
+        $this->assertTrue(
+            $social
+                ->setType(\Galette\Entity\Social::MASTODON)
+                ->setUrl('mastodon URL')
+                ->setLinkedMember($adh1->id)
+                ->store()
+        );
+
+        //get again, with socials
+        $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            [],
+            ['member', 'member:socials']
+        );
+
+        $this->assertSame(
+            $expected_base + [
+                'socials' => [
+                    \Galette\Entity\Social::MASTODON => 'mastodon URL'
+                ]
+            ],
+            $user_data
+        );
+
+
+        //no scope => error
+        $this->expectExceptionMessage('Default scope (member) has not been authorized.');
+        \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            [],
+            []
+        );
+
     }
 }
