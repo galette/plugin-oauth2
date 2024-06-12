@@ -30,6 +30,7 @@ use GaletteOAuth2\Authorization\UserAuthorizationException;
 use GaletteOAuth2\Authorization\UserHelper;
 use GaletteOAuth2\Tools\Config;
 use GaletteOAuth2\Tools\Debug;
+use RKA\Session;
 use Slim\Psr7\Request;
 use Slim\Psr7\Response;
 
@@ -48,6 +49,8 @@ final class LoginController extends AbstractPluginController
     protected array $module_info;
     protected Container $container;
     protected Config $config;
+    #[Inject("oauth_session")]
+    protected Session $session;
 
     // constructor receives container instance
     public function __construct(Container $container)
@@ -96,7 +99,6 @@ final class LoginController extends AbstractPluginController
         //Try login
         $this->session->isLoggedIn = 'no';
         $this->session->user_id = $uid = UserHelper::login($this->container, $params['login'], $params['password']);
-        //if($params['login'] == 'manuel') $loginSuccessful = true;
         Debug::log("UserHelper::login({$params['login']}) return '{$uid}'");
 
         if (false === $uid) {

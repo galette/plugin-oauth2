@@ -44,7 +44,7 @@ final class UserHelper
         /** @var Login $login */
         $login = $container->get('login');
         $history = $container->get('history');
-        $session = $container->get('session');
+        $session = $container->get('oauth_session');
         $flash = $container->get('flash');
 
         if (trim($nick) === '' || trim($password) === '') {
@@ -90,7 +90,7 @@ final class UserHelper
         /** @var Login $login */
         $login = $container->get('login');
         $history = $container->get('history');
-        $session = $container->get('session');
+        $session = $container->get('oauth_session');
 
         $login->logout();
         $session->login = $login;
