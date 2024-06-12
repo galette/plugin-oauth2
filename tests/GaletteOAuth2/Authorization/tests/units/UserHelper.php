@@ -80,6 +80,17 @@ class UserHelper extends GaletteTestCase
         $this->initStatus();
         $adh1  = $this->getMemberOne();
 
+        $data = $this->dataAdherentOne();
+        $data['bool_admin_adh'] = true;
+        $check = $this->adh->check($data, [], []);
+        if (is_array($check)) {
+            var_dump($check);
+        }
+        $this->assertTrue($check);
+
+        $store = $this->adh->store();
+        $this->assertTrue($store);
+
         //test for default scope
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
@@ -147,7 +158,29 @@ class UserHelper extends GaletteTestCase
         );
 
         $this->assertSame(
-            $expected_base + ['groups' => 'non-member'],
+            $expected_base + [
+                'groups' => [
+                    'non-member',
+                    'admin'
+                ]
+            ],
+            $user_data
+        );
+
+        $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            ['teamonly'],
+            ['member', 'member:groups']
+        );
+
+        $this->assertSame(
+            $expected_base + [
+                'groups' => [
+                    'non-member',
+                    'admin'
+                ]
+            ],
             $user_data
         );
 
@@ -246,6 +279,26 @@ class UserHelper extends GaletteTestCase
             [],
             []
         );
+    }
 
+    /**
+     * Test requireAdmin
+     *
+     * @return void
+     */
+    public function testRequireAdmin()
+    {
+        global $container;
+
+        $this->initStatus();
+        $adh1  = $this->getMemberOne();
+
+        $this->expectExceptionMessage("Sorry, you can't login because your are not a team member.");
+        \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh1->id,
+            ['teamonly'],
+            ['member']
+        );
     }
 }
