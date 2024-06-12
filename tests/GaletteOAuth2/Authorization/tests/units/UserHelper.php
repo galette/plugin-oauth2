@@ -101,6 +101,7 @@ class UserHelper extends GaletteTestCase
 
         $expected_base = [
             'id' => $adh1->id,
+            'sub' => $adh1->id,
             'identifier' => $adh1->id,
             'displayName' => $adh1->sname,
             'username' => 'r.durand',
