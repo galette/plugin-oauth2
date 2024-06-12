@@ -283,7 +283,7 @@ final class UserHelper
      *
      * @param Adherent $member Member
      *
-     * @return string
+     * @return array
      */
     protected static function getUserGroups(Adherent $member): array
     {
