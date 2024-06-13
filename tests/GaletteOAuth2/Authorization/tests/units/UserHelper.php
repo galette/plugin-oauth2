@@ -95,7 +95,7 @@ class UserHelper extends GaletteTestCase
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            [],
+            '',
             ['member']
         );
 
@@ -123,7 +123,7 @@ class UserHelper extends GaletteTestCase
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            [],
+            '',
             ['member', 'member:personal']
         );
 
@@ -142,7 +142,7 @@ class UserHelper extends GaletteTestCase
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            [],
+            '',
             ['member', 'member:phones']
         );
 
@@ -155,7 +155,7 @@ class UserHelper extends GaletteTestCase
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            [],
+            '',
             ['member', 'member:groups']
         );
 
@@ -172,7 +172,7 @@ class UserHelper extends GaletteTestCase
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            ['teamonly'],
+            'teamonly',
             ['member', 'member:groups']
         );
 
@@ -190,7 +190,7 @@ class UserHelper extends GaletteTestCase
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            [],
+            '',
             ['member', 'member:due_date']
         );
 
@@ -203,7 +203,7 @@ class UserHelper extends GaletteTestCase
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            [],
+            '',
             ['member', 'member:localization']
         );
 
@@ -223,7 +223,7 @@ class UserHelper extends GaletteTestCase
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            [],
+            '',
             ['member', 'member:localization:precise']
         );
 
@@ -240,7 +240,7 @@ class UserHelper extends GaletteTestCase
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            [],
+            '',
             ['member', 'member:socials']
         );
 
@@ -263,7 +263,7 @@ class UserHelper extends GaletteTestCase
         $user_data = \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            [],
+            '',
             ['member', 'member:socials']
         );
 
@@ -282,7 +282,7 @@ class UserHelper extends GaletteTestCase
         \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            [],
+            '',
             []
         );
     }
@@ -303,8 +303,246 @@ class UserHelper extends GaletteTestCase
         \GaletteOAuth2\Authorization\UserHelper::getUserData(
             $container,
             $adh1->id,
-            ['teamonly'],
+            'teamonly',
             ['member']
         );
     }
+
+    /**
+     * Test with a not found member (id = 0))
+     *
+     * @return void
+     */
+    public function testMemberNotFoundZero()
+    {
+        global $container;
+
+        $this->expectExceptionMessage("User not found.");
+        \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            0,
+            'teamonly',
+            ['member']
+        );
+    }
+
+    /**
+     * Test with a not found member
+     *
+     * @return void
+     */
+    public function testMemberNotFound()
+    {
+        global $container;
+
+        $this->expectExceptionMessage("User not found.");
+        \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            42,
+            'teamonly',
+            ['member']
+        );
+    }
+
+    /**
+     * Test with an inactive member
+     *
+     * @return void
+     */
+    public function testMemberInactive()
+    {
+        global $container;
+
+        $adh = new \Galette\Entity\Adherent($this->zdb);
+        $adh->setDependencies(
+            $this->preferences,
+            $this->members_fields,
+            $this->history
+        );
+
+        $data = $this->dataAdherentOne();
+        $data['activite_adh'] = false;
+        $check = $adh->check($data, [], []);
+        if (is_array($check)) {
+            var_dump($check);
+        }
+        $this->assertTrue($check);
+
+        $store = $adh->store();
+        $this->assertTrue($store);
+
+        $this->expectExceptionMessage("Sorry, you cant't login because you are not an active member.");
+        \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh->id,
+            'teamonly',
+            ['member']
+        );
+    }
+
+    /**
+     * Test with a member without an email address
+     *
+     * @return void
+     */
+    public function testMemberNoMail()
+    {
+        global $container;
+
+        $adh = new \Galette\Entity\Adherent($this->zdb);
+        $adh->setDependencies(
+            $this->preferences,
+            $this->members_fields,
+            $this->history
+        );
+
+        $data = $this->dataAdherentOne();
+        $data['email_adh'] = '';
+        $check = $adh->check($data, [], []);
+        if (is_array($check)) {
+            var_dump($check);
+        }
+        $this->assertTrue($check);
+
+        $store = $adh->store();
+        $this->assertTrue($store);
+
+        $this->expectExceptionMessage("Sorry, you can't login. Please, add an email address to your account.");
+        \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh->id,
+            'teamonly',
+            ['member']
+        );
+    }
+
+    /**
+     * Test with a member that is not up-to-date
+     *
+     * @return void
+     */
+    public function testMemberNotUp2Date(): void
+    {
+        global $container;
+
+        $adh = new \Galette\Entity\Adherent($this->zdb);
+        $adh->setDependencies(
+            $this->preferences,
+            $this->members_fields,
+            $this->history
+        );
+
+        $data = $this->dataAdherentOne();
+        $check = $adh->check($data, [], []);
+        if (is_array($check)) {
+            var_dump($check);
+        }
+        $this->assertTrue($check);
+
+        $store = $adh->store();
+        $this->assertTrue($store);
+
+        $this->expectExceptionMessage("Sorry, you can't login because your are not an up-to-date member.");
+        \GaletteOAuth2\Authorization\UserHelper::getUserData(
+            $container,
+            $adh->id,
+            'uptodate',
+            ['member']
+        );
+    }
+
+    /**
+     * Test getAuthorization
+     *
+     * @return void
+     */
+    public function testGetAuthorizations(): void
+    {
+        $config = new \GaletteOAuth2\Tools\Config(OAUTH2_CONFIGPATH . '/config.yml');
+
+        //always defaults to 'teamonly'
+        $this->assertSame(
+            'teamonly',
+            \GaletteOAuth2\Authorization\UserHelper::getAuthorization($config, 'any')
+        );
+
+        $client_id = 'galette_test';
+        $config->set($client_id . '.authorize', 'unknown');
+        $this->assertSame(
+            'teamonly',
+            \GaletteOAuth2\Authorization\UserHelper::getAuthorization($config, 'galette_test')
+        );
+
+        //correct value will be retrived
+        $this->assertSame(
+            'teamonly',
+            \GaletteOAuth2\Authorization\UserHelper::getAuthorization($config, 'galette_cli')
+        );
+        $this->assertSame(
+            'uptodate',
+            \GaletteOAuth2\Authorization\UserHelper::getAuthorization($config, 'galette_flarum')
+        );
+
+        /*$this->assertSame(
+            [
+                'member',
+                'member:personal',
+                'member:phones',
+                'member:groups',
+                'member:due_date',
+                'member:localization',
+                'member:localization:precise',
+                'member:socials'
+            ],
+            \GaletteOAuth2\Authorization\UserHelper::getAuthorization($this->config, $client_id)
+        );*/
+
+
+    }
+
+    /**
+     * Test getAuthorization
+     *
+     * @return void
+     */
+    /*public function testMergeScopes(): void
+    {
+        global $container;
+
+        $this->initStatus();
+        $adh1  = $this->getMemberOne();
+
+        $client_id = 'test';
+        $this->config->set('oauth2.authorizations', [
+            $client_id => [
+                'member',
+                'member:personal',
+                'member:phones',
+                'member:groups',
+                'member:due_date',
+                'member:localization',
+                'member:localization:precise',
+                'member:socials'
+            ]
+        ]);
+
+        $this->assertSame(
+            [
+                'member',
+                'member:personal',
+                'member:phones',
+                'member:groups',
+                'member:due_date',
+                'member:localization',
+                'member:localization:precise',
+                'member:socials'
+            ],
+            \GaletteOAuth2\Authorization\UserHelper::getAuthorization($this->config, $client_id)
+        );
+
+        $this->assertSame(
+            [],
+            \GaletteOAuth2\Authorization\UserHelper::getAuthorization($this->config, 'unknown')
+        );
+    }*/
 }

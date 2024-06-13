@@ -80,7 +80,7 @@ final class ApiController extends AbstractPluginController
             $data = UserHelper::getUserData(
                 $this->container,
                 $oauth_user_id,
-                UserHelper::getAuthorizations($this->config, $client_id),
+                UserHelper::getAuthorization($this->config, $client_id),
                 UserHelper::mergeScopes(
                     $this->config,
                     $client_id,

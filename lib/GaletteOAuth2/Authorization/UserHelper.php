@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace GaletteOAuth2\Authorization;
 
+use Analog\Analog;
 use DI\Container;
 use Galette\Core\Db;
 use Galette\Core\Login;
@@ -103,7 +104,7 @@ final class UserHelper
      *
      * @param Container    $container Container instance
      * @param int          $id        User ID
-     * @param array        $acls      Requested authorizations
+     * @param string       $acl       Requested authorization
      * @param array|string $scopes    Scopes
      * @return array
      * @throws UserAuthorizationException
@@ -111,21 +112,19 @@ final class UserHelper
      * @throws \DI\NotFoundException
      * @throws \Throwable
      */
-    public static function getUserData(Container $container, int $id, array $acls, array|string $scopes): array
+    public static function getUserData(Container $container, int $id, string $acl, array|string $scopes): array
     {
         /** @var Db $zdb */
         $zdb = $container->get('zdb');
 
-        if ($id === 0) {
+        $member = new Adherent($zdb);
+        if (!$member->load($id)) {
             throw new UserAuthorizationException(_T('User not found.', 'oauth2'));
         }
 
-        $member = new Adherent($zdb);
-        $member->load($id);
-
         //check active member ?
         if (!$member->isActive()) {
-            throw new UserAuthorizationException(_T('You are not an active member.', 'oauth2'));
+            throw new UserAuthorizationException(_T("Sorry, you cant't login because you are not an active member.", "oauth2"));
         }
 
         //check email
@@ -133,7 +132,7 @@ final class UserHelper
             throw new UserAuthorizationException(_T("Sorry, you can't login. Please, add an email address to your account.", 'oauth2'));
         }
 
-        if (in_array('teamonly', $acls, true)) {
+        if ($acl === 'teamonly') {
             if (!$member->isAdmin() && !$member->isStaff() && !$member->isGroupManager(null)) {
                 throw new UserAuthorizationException(
                     _T("Sorry, you can't login because your are not a team member.", 'oauth2')
@@ -141,7 +140,7 @@ final class UserHelper
             }
         }
 
-        if (in_array('uptodate', $acls, true)) {
+        if ($acl ==='uptodate') {
             if (!$member->isUp2Date()) {
                 throw new UserAuthorizationException(
                     _T("Sorry, you can't login because your are not an up-to-date member.", 'oauth2')
@@ -332,26 +331,23 @@ final class UserHelper
      * @param Config $config Config instance
      * @param string $client_id
      *
-     * @return array
+     * @return string
      */
-    public static function getAuthorizations(Config $config, string $client_id): array
+    public static function getAuthorization(Config $config, string $client_id): string
     {
-        $acls = [];
-        $conf_acls = $config->get($client_id . '.scopes');
-        if ($conf_acls) {
-            if (!is_array($conf_acls)) {
-                $conf_acls = str_replace([';', ','], ' ', $conf_acls);
-                $conf_acls = explode(' ', $conf_acls);
-            }
-            $acls = $conf_acls;
+        $acl = 'teamonly';
+        $conf_acls = $config->get($client_id . '.authorize');
+
+        if ($conf_acls !== 'teamonly' && $conf_acls !== 'uptodate') {
+            Analog::log(
+                'Invalid authorization configuration for client ' . $client_id . ': ' . $conf_acls,
+                Analog::ERROR
+            );
+        } else {
+            $acl = $conf_acls;
         }
 
-        if (!count($acls)) {
-            //Set default authorizations
-            $acls = ['teamonly'];
-        }
-
-        return $acls;
+        return $acl;
     }
 
     /**
