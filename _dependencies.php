@@ -63,7 +63,6 @@ $container->set(
                 }
                 $conf->remove($key . '.options');
             }
-
         } while ($conf->next());
 
         return $conf;

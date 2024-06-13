@@ -140,7 +140,7 @@ final class UserHelper
             }
         }
 
-        if ($acl ==='uptodate') {
+        if ($acl === 'uptodate') {
             if (!$member->isUp2Date()) {
                 throw new UserAuthorizationException(
                     _T("Sorry, you can't login because your are not an up-to-date member.", 'oauth2')
