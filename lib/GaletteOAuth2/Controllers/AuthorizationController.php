@@ -28,6 +28,7 @@ use DI\Attribute\Inject;
 use DI\Container;
 use Exception;
 use Galette\Controllers\AbstractPluginController;
+use GaletteOAuth2\Authorization\UserAuthorizationException;
 use GaletteOAuth2\Authorization\UserHelper;
 use GaletteOAuth2\Entities\UserEntity;
 use GaletteOAuth2\Repositories\ScopeRepository;
@@ -189,9 +190,9 @@ final class AuthorizationController extends AbstractPluginController
             if (isset($params['approve'])) {
                 $authRequest->setAuthorizationApproved(true);
                 $scopes = UserHelper::mergeScopes(
-                    $this->config,
+                    null,
                     $queryParams['client_id'],
-                    $queryParams['scope'] ?? [],
+                    $params['scopes'] ?? [],
                     true
                 );
                 $req_scopes = [];
@@ -203,6 +204,7 @@ final class AuthorizationController extends AbstractPluginController
             } else {
                 $authRequest->setAuthorizationApproved(true);
                 $authRequest->setScopes([]);
+                throw new UserAuthorizationException('No scope has been allowed.');
             }
 
             // Return the HTTP redirect response

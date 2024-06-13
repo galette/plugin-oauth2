@@ -364,31 +364,37 @@ final class UserHelper
      * @return array
      */
     public static function mergeScopes(
-        Config $config,
+        ?Config $config,
         string $client_id,
         array|string $requested_scopes,
         bool $with_default = false
     ): array {
         $scopes = [];
 
+        //add default scope if requested
         if ($with_default === true) {
             $scopes[] = 'member';
         }
 
+        //handle requested scopes
         if (!is_array($requested_scopes)) {
             $requested_scopes = str_replace([';', ','], ' ', $requested_scopes);
             $requested_scopes = explode(' ', $requested_scopes);
         }
         $scopes = array_merge($scopes, $requested_scopes);
 
-        $conf_scopes = $config->get($client_id . '.scopes');
-        if ($conf_scopes) {
-            if (!is_array($conf_scopes)) {
-                $conf_scopes = str_replace([';', ','], ' ', $conf_scopes);
-                $conf_scopes = explode(' ', $conf_scopes);
+        if ($config !== null) {
+            //handle config scopes
+            $conf_scopes = $config->get($client_id . '.scopes');
+            if ($conf_scopes) {
+                if (!is_array($conf_scopes)) {
+                    $conf_scopes = str_replace([';', ','], ' ', $conf_scopes);
+                    $conf_scopes = explode(' ', $conf_scopes);
+                }
+                $scopes = array_merge($scopes, $conf_scopes);
             }
-            $scopes = array_merge($scopes, $conf_scopes);
         }
+
         $scopes = array_unique($scopes);
         $scopes = array_map('strtolower', $scopes);
         Debug::log('Scopes: ' . implode(' ', $scopes));
