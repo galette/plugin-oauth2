@@ -224,7 +224,7 @@ class UserHelper extends GaletteTestCase
             $container,
             $adh1->id,
             [],
-            ['member', 'member:localization:fine']
+            ['member', 'member:localization:precise']
         );
 
         $address->formatted = "66, boulevard De Oliveira\r\n\r\n39 069 Martel\r\nAntarctique";

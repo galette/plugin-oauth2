@@ -53,6 +53,9 @@ final class ScopeRepository implements ScopeRepositoryInterface
             'member:localization:precise' => [
                 'description' => _T('Access to your precise localisation data: full address, coordinates (from maps plugin)', 'oauth2'),
             ],
+            'member:phones' => [
+                'description' => _T('Access to your phone numbers', 'oauth2'),
+            ],
             'member:socials' => [
                 'description' => _T('Access to your social networks data', 'oauth2'),
             ],

@@ -120,12 +120,6 @@ final class LoginController extends AbstractPluginController
         }
 
         try {
-            $scopes = $this->session->request_args['scope'] ?? [];
-            if (!is_array($scopes)) {
-                $scopes = str_replace([';', ','], ' ', $scopes);
-                $scopes = explode(' ', $scopes);
-            }
-
             $client_id = $this->session->request_args['client_id'];
             UserHelper::getUserData(
                 $this->container,
@@ -134,7 +128,8 @@ final class LoginController extends AbstractPluginController
                 UserHelper::mergeScopes(
                     $this->config,
                     $client_id,
-                    $this->session->request_args['scope'] ?? []
+                    $this->session->request_args['scope'] ?? [],
+                    true
                 )
             );
         } catch (UserAuthorizationException $e) {

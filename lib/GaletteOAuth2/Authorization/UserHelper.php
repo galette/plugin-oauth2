@@ -209,10 +209,10 @@ final class UserHelper
         }
 
         //member:localization
-        if (in_array('member:localization', $scopes) || in_array('member:localization:fine', $scopes)) {
+        if (in_array('member:localization', $scopes) || in_array('member:localization:precise', $scopes)) {
             $address = new \stdClass();
 
-            if (in_array('member:localization:fine', $scopes)) {
+            if (in_array('member:localization:precise', $scopes)) {
                 $formatted = $member->getAddress();
                 if ($member->getZipcode() || $member->getTown()) {
                     $formatted .= "\r\n\r\n";
@@ -363,16 +363,25 @@ final class UserHelper
      *
      * @return array
      */
-    public static function mergeScopes(Config $config, string $client_id, array|string $requested_scopes): array
-    {
+    public static function mergeScopes(
+        Config $config,
+        string $client_id,
+        array|string $requested_scopes,
+        bool $with_default = false
+    ): array {
         $scopes = [];
+
+        if ($with_default === true) {
+            $scopes[] = 'member';
+        }
+
         if (!is_array($requested_scopes)) {
             $requested_scopes = str_replace([';', ','], ' ', $requested_scopes);
             $requested_scopes = explode(' ', $requested_scopes);
         }
         $scopes = array_merge($scopes, $requested_scopes);
 
-        $conf_scopes = $config->get("{$client_id}.scopes");
+        $conf_scopes = $config->get($client_id . '.scopes');
         if ($conf_scopes) {
             if (!is_array($conf_scopes)) {
                 $conf_scopes = str_replace([';', ','], ' ', $conf_scopes);
@@ -382,7 +391,7 @@ final class UserHelper
         }
         $scopes = array_unique($scopes);
         $scopes = array_map('strtolower', $scopes);
-        Debug::log('Scopes: ' . implode(';', $scopes));
+        Debug::log('Scopes: ' . implode(' ', $scopes));
 
         return $scopes;
     }

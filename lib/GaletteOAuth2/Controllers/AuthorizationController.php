@@ -127,15 +127,11 @@ final class AuthorizationController extends AbstractPluginController
             $user->setIdentifier($this->session->user_id);
             $authRequest->setUser($user);
 
-            $scopes = array_unique(
-                array_merge(
-                    ['member'],
-                    UserHelper::mergeScopes(
-                        $this->config,
-                        $client_id,
-                        $queryParams['scope'] ?? []
-                    )
-                )
+            $scopes = UserHelper::mergeScopes(
+                $this->config,
+                $client_id,
+                $queryParams['scope'] ?? [],
+                true
             );
 
             $this->view->render(
@@ -192,15 +188,11 @@ final class AuthorizationController extends AbstractPluginController
             // (true = approved, false = denied)
             if (isset($params['approve'])) {
                 $authRequest->setAuthorizationApproved(true);
-                $scopes = array_unique(
-                    array_merge(
-                        ['member'],
-                        UserHelper::mergeScopes(
-                            $this->config,
-                            $queryParams['client_id'],
-                            $queryParams['scope'] ?? []
-                        )
-                    )
+                $scopes = UserHelper::mergeScopes(
+                    $this->config,
+                    $queryParams['client_id'],
+                    $queryParams['scope'] ?? [],
+                    true
                 );
                 $req_scopes = [];
                 $srepo = new ScopeRepository();

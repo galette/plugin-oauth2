@@ -84,7 +84,7 @@ When ther eis no option set in configuration, it defaults to "active" + "uptodat
   * region,
   * town,
   * zipcode
-* `member:localization:fine` precise localization data:
+* `member:localization:precise` precise localization data:
   * address,
   * maps plugin coordinates
 * `member:phones`:
