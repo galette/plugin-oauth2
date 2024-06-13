@@ -204,7 +204,13 @@ final class AuthorizationController extends AbstractPluginController
             } else {
                 $authRequest->setAuthorizationApproved(true);
                 $authRequest->setScopes([]);
-                throw new UserAuthorizationException('No scope has been allowed.');
+
+                throw OAuthServerException::accessDenied(
+                    sprintf(
+                        _T('Default scope (%s) has not been authorized.', 'oauth2'),
+                        'member'
+                    )
+                );
             }
 
             // Return the HTTP redirect response
@@ -222,6 +228,8 @@ final class AuthorizationController extends AbstractPluginController
             $body->write($exception->getMessage());
 
             return $response->withStatus(500)->withBody($body);
+        } finally {
+            $this->login->logout();
         }
     }
 

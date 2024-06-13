@@ -124,7 +124,7 @@ final class LoginController extends AbstractPluginController
             UserHelper::getUserData(
                 $this->container,
                 $uid,
-                UserHelper::getOptions($this->config, $client_id),
+                UserHelper::getAuthorizations($this->config, $client_id),
                 UserHelper::mergeScopes(
                     $this->config,
                     $client_id,

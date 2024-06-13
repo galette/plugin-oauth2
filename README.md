@@ -54,16 +54,12 @@ The corresponding NextCloud configuration:
 ![Nextcloud configuration example](examples/nextcloud.png)
 
 
-### Available options :
+### Available authorizations:
 
-* admin: only admin members can login
-* staff: only staff members can login
-* active: only active accounts can login
-* uptodate: only up-to-date members can login
-* groupmanager: groups managers can login
-* teamonly: only team members (alias for "admin" + "staff" + "groupmanager")
+* `uptodate`: only active and up-to-date members can login
+* `teamonly`: only active team members (admins, staff and groups managers)
 
-When ther eis no option set in configuration, it defaults to "active" + "uptodate".
+When there is no option set in configuration, it defaults to "teamonly".
 
 ### Scopes
 
@@ -74,10 +70,10 @@ When ther eis no option set in configuration, it defaults to "active" + "uptodat
   * language
   * company name if relevant
 * `member:personal` precise personal data:
-  * birth date,
+  * birthdate,
   * job,
   * gender,
-  * birth place
+  * birthplace
   * GPG id
 * `member:localization` localization data:
   * country,
@@ -95,7 +91,7 @@ When ther eis no option set in configuration, it defaults to "active" + "uptodat
 * `member:groups`:
   * groups member is part of
 * `member:due_date`:
-  * due_datee date
+  * due date
 
 # Usage
 

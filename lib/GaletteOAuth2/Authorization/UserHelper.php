@@ -103,7 +103,7 @@ final class UserHelper
      *
      * @param Container    $container Container instance
      * @param int          $id        User ID
-     * @param array        $options   Access options
+     * @param array        $acls      Requested authorizations
      * @param array|string $scopes    Scopes
      * @return array
      * @throws UserAuthorizationException
@@ -111,7 +111,7 @@ final class UserHelper
      * @throws \DI\NotFoundException
      * @throws \Throwable
      */
-    public static function getUserData(Container $container, int $id, array $options, array|string $scopes): array
+    public static function getUserData(Container $container, int $id, array $acls, array|string $scopes): array
     {
         /** @var Db $zdb */
         $zdb = $container->get('zdb');
@@ -122,6 +122,32 @@ final class UserHelper
 
         $member = new Adherent($zdb);
         $member->load($id);
+
+        //check active member ?
+        if (!$member->isActive()) {
+            throw new UserAuthorizationException(_T('You are not an active member.', 'oauth2'));
+        }
+
+        //check email
+        if (!filter_var($member->email, FILTER_VALIDATE_EMAIL)) {
+            throw new UserAuthorizationException(_T("Sorry, you can't login. Please, add an email address to your account.", 'oauth2'));
+        }
+
+        if (in_array('teamonly', $acls, true)) {
+            if (!$member->isAdmin() && !$member->isStaff() && !$member->isGroupManager(null)) {
+                throw new UserAuthorizationException(
+                    _T("Sorry, you can't login because your are not a team member.", 'oauth2')
+                );
+            }
+        }
+
+        if (in_array('uptodate', $acls, true)) {
+            if (!$member->isUp2Date()) {
+                throw new UserAuthorizationException(
+                    _T("Sorry, you can't login because your are not an up-to-date member.", 'oauth2')
+                );
+            }
+        }
 
         $default_scope = array_search('member', $scopes, true);
         if ($default_scope !== false) {
@@ -154,34 +180,6 @@ final class UserHelper
             mb_substr(self::stripAccents($member->surname), 0, 1),
             self::stripAccents($nameFPart)
         );
-
-        //TODO: rework options as documented in README.md
-        //check active member ?
-        if (!$member->isActive()) {
-            throw new UserAuthorizationException(_T('You are not an active member.', 'oauth2'));
-        }
-
-        //check email
-        if (!filter_var($member->email, FILTER_VALIDATE_EMAIL)) {
-            throw new UserAuthorizationException(_T("Sorry, you can't login. Please, add an email address to your account.", 'oauth2'));
-        }
-
-        //teamonly
-        if (in_array('teamonly', $options, true)) {
-            if (!$member->isAdmin() && !$member->isStaff() && !$member->isGroupManager(null)) {
-                throw new UserAuthorizationException(
-                    _T("Sorry, you can't login because your are not a team member.", 'oauth2')
-                );
-            }
-        }
-        //uptodate
-        if (in_array('uptodate', $options, true)) {
-            if (!$member->isUp2Date()) {
-                throw new UserAuthorizationException(
-                    _T("Sorry, you can't login because your are not an up-to-date member.", 'oauth2')
-                );
-            }
-        }
 
         //FIXME: be compliant with OpenID-Connect (see https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims)
         $oauth_data = [
@@ -329,28 +327,31 @@ final class UserHelper
     }
 
     /**
-     * Get configured options
+     * Get required authorizations
      *
      * @param Config $config Config instance
-     *
      * @param string $client_id
      *
      * @return array
      */
-    public static function getOptions(Config $config, string $client_id): array
+    public static function getAuthorizations(Config $config, string $client_id): array
     {
-        $options = [];
-        $o = $config->get("{$client_id}.options");
-
-        if ($o) {
-            $o = str_replace(';', ' ', $o);
-            $o = explode(' ', $o);
-            $options = array_merge($o, $options);
+        $acls = [];
+        $conf_acls = $config->get($client_id . '.scopes');
+        if ($conf_acls) {
+            if (!is_array($conf_acls)) {
+                $conf_acls = str_replace([';', ','], ' ', $conf_acls);
+                $conf_acls = explode(' ', $conf_acls);
+            }
+            $acls = $conf_acls;
         }
-        $options = array_unique($options);
-        Debug::log('Options: ' . implode(';', $options));
 
-        return $options;
+        if (!count($acls)) {
+            //Set default authorizations
+            $acls = ['teamonly'];
+        }
+
+        return $acls;
     }
 
     /**
