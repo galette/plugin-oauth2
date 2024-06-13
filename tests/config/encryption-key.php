@@ -19,21 +19,12 @@
  * along with Galette OAuth2 plugin. If not, see <http://www.gnu.org/licenses/>.
  */
 
+declare(strict_types=1);
+
 /**
- * Bootstrap tests file for OAuth2 plugin
+ * Encryption key
  *
- * @author Johan Cwiklinski <johan@x-tnd.be>
+ * @author Manuel Hervouet <manuelh78dev@ik.me>
  */
 
-define('GALETTE_PLUGINS_PATH', __DIR__ . '/../../');
-$basepath = '../../../galette/';
-
-define('OAUTH2_CONFIGPATH', __DIR__ . '/config');
-
-include_once __DIR__ . '/../vendor/autoload.php';
-include_once '../../../tests/TestsBootstrap.php';
-include_once __DIR__ . '/../_dependencies.php';
-$module = [
-    'root' => __DIR__ . '/..'
-];
-include_once __DIR__ . '/../_routes.php';
+$encryptionKey = 'KEY';
