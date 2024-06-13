@@ -36,13 +36,12 @@ global:
 galette_flarum:
     title: 'Forum Flarum'
     redirect_logout: 'http://192.168.1.99/flarum/public'
-    options: teamonly
 galette_nc:
     title: 'Nextcloud'
     redirect_logout: 'http://192.168.1.99/nextcloud'
-    options: uptodate
+    scopes:
+        - member:groups
 galette_xxxxx:
-
 ```
 
 The corresponding Flarum configuration:
@@ -59,9 +58,12 @@ The corresponding NextCloud configuration:
 * `uptodate`: only active and up-to-date members can login
 * `teamonly`: only active team members (admins, staff and groups managers)
 
-When there is no option set in configuration, it defaults to "teamonly".
+When there is no `authorize` entry set in configuration, it defaults to "teamonly".
 
 ### Scopes
+
+Default `member` scope will be added if it is not present in your configuration (even if you do not set any scope).
+To declare multiple scopes, separate them with a space like `member member:phone member:localization`.
 
 * `member`: default, basic scope - always included:
   * user full name,
