@@ -7,9 +7,7 @@ galette_flarum:
 galette_nc:
     title: 'Le cloud de votre association'
     redirect_logout: 'http://192.168.1.99/nextcloud'
-    authorize:
-        - active
-        - uptodate
+    authorize: teamonly
     scopes:
         - member
         - member:localization

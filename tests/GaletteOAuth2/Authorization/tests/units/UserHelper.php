@@ -473,7 +473,7 @@ class UserHelper extends GaletteTestCase
             \GaletteOAuth2\Authorization\UserHelper::getAuthorization($config, 'galette_test')
         );
 
-        //correct value will be retrived
+        //correct value will be retrieved
         $this->assertSame(
             'teamonly',
             \GaletteOAuth2\Authorization\UserHelper::getAuthorization($config, 'galette_cli')
@@ -482,22 +482,6 @@ class UserHelper extends GaletteTestCase
             'uptodate',
             \GaletteOAuth2\Authorization\UserHelper::getAuthorization($config, 'galette_flarum')
         );
-
-        /*$this->assertSame(
-            [
-                'member',
-                'member:personal',
-                'member:phones',
-                'member:groups',
-                'member:due_date',
-                'member:localization',
-                'member:localization:precise',
-                'member:socials'
-            ],
-            \GaletteOAuth2\Authorization\UserHelper::getAuthorization($this->config, $client_id)
-        );*/
-
-
     }
 
     /**
@@ -505,44 +489,101 @@ class UserHelper extends GaletteTestCase
      *
      * @return void
      */
-    /*public function testMergeScopes(): void
+    public function testMergeScopes(): void
     {
-        global $container;
+        $config = new \GaletteOAuth2\Tools\Config(OAUTH2_CONFIGPATH . '/config.yml');
 
-        $this->initStatus();
-        $adh1  = $this->getMemberOne();
+        $this->assertSame(
+            [],
+            \GaletteOAuth2\Authorization\UserHelper::mergeScopes($config, 'any', [])
+        );
 
-        $client_id = 'test';
-        $this->config->set('oauth2.authorizations', [
-            $client_id => [
-                'member',
-                'member:personal',
-                'member:phones',
-                'member:groups',
-                'member:due_date',
-                'member:localization',
-                'member:localization:precise',
-                'member:socials'
-            ]
-        ]);
+        $this->assertSame(
+            ['member'],
+            \GaletteOAuth2\Authorization\UserHelper::mergeScopes($config, 'any', [], true)
+        );
 
         $this->assertSame(
             [
                 'member',
-                'member:personal',
+                'member:localization',
                 'member:phones',
                 'member:groups',
-                'member:due_date',
-                'member:localization',
-                'member:localization:precise',
-                'member:socials'
             ],
-            \GaletteOAuth2\Authorization\UserHelper::getAuthorization($this->config, $client_id)
+            \GaletteOAuth2\Authorization\UserHelper::mergeScopes($config, 'galette_nc', [])
         );
 
         $this->assertSame(
-            [],
-            \GaletteOAuth2\Authorization\UserHelper::getAuthorization($this->config, 'unknown')
+            [
+                'member:due_date',
+            ],
+            \GaletteOAuth2\Authorization\UserHelper::mergeScopes($config, 'galette_cli', [])
         );
-    }*/
+
+        $this->assertSame(
+            [
+                'member',
+                'member:due_date',
+            ],
+            \GaletteOAuth2\Authorization\UserHelper::mergeScopes($config, 'galette_cli', [], true)
+        );
+
+        $this->assertSame(
+            [
+                'member',
+                'member:phones',
+                'member:localization:precise',
+                'member:due_date',
+            ],
+            \GaletteOAuth2\Authorization\UserHelper::mergeScopes(
+                $config,
+                'galette_cli',
+                [
+                    'member:phones',
+                    'member:localization:precise'
+                ],
+                true
+            )
+        );
+
+        $this->assertSame(
+            [
+                'member:phones',
+                'member:localization:precise',
+                'member:due_date',
+            ],
+            \GaletteOAuth2\Authorization\UserHelper::mergeScopes(
+                $config,
+                'galette_cli',
+                'member:phones member:localization:precise'
+            )
+        );
+
+        $this->assertSame(
+            [
+                'member:phones',
+                'member:localization:precise',
+                'member:due_date',
+            ],
+            \GaletteOAuth2\Authorization\UserHelper::mergeScopes(
+                $config,
+                'galette_cli',
+                'member:phones;member:localization:precise'
+            )
+        );
+
+        $client_id = 'galette_test';
+        $config->set($client_id . '.scopes', 'member:phones;member:localization:precise');
+        $this->assertSame(
+            [
+                'member:phones',
+                'member:localization:precise'
+            ],
+            \GaletteOAuth2\Authorization\UserHelper::mergeScopes(
+                $config,
+                'galette_test',
+                []
+            )
+        );
+    }
 }
